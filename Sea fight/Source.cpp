@@ -4,11 +4,13 @@ using namespace std;
 
 int main()
 {
+	system("color F0");
 	setlocale(LC_ALL, "ru");
-//начальна€ позици€ 
-	UserNavy userNavy;
-	RobotNavy robotNavy;
+    //начальна€ позици€ 
+	UserNavy userNavy; //‘лот пользовател€
+	RobotNavy robotNavy;//‘лот робота
 	userNavy.Show();
+	//printf("\a");
 
 	while (userNavy.IsLive() && robotNavy.IsLive()) {
 		//выстрел пользовател€
