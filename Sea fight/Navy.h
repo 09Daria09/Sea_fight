@@ -1,62 +1,62 @@
 #pragma once
 #include "Ship.h"
-#define DECK 176 //исправная клетка-палуба
+#define DECK 1 //исправная клетка-палуба
 #define DAMAGE 'X'//разрушенная клетка-палуба
-#define MISS 'O'//пустая клетка, в которую упал снаряд
+#define MISS '#'//пустая клетка, в которую упал снаряд
 
 typedef unsigned char Field[N][N];//--
-typedef std::map<Cell, int>ShipMap;
+typedef std::map<ElementCell, int>ShipMap;
 
 enum CurrentState{Miss, Damage, Kill};
 
 struct Space{
 	public:
-		static Cell u_fire;  //огонь от пользователя
-		static Cell r_fire; //огонь от компьютера
+		static ElementCell u_fire;  //огонь от пользователя
+		static ElementCell r_fire; //огонь от компьютера
 		static CurrentState u_state; //состояние пользователя 
 		static CurrentState r_state; //состояние робота
-		static int step; //
 };
 
 class Navy: public Space{
+protected:
+	Ship ship[10]; //корабли
+	Field UserField; //игровое поле пользователя
+	Field RobotField; //игровое поле противника
+	ShipMap shipMap; //клетка - индекс корабля
+	CellSet ForbiddenCells; //запрещенные клетки
+	CellSet DestroyedCells; //уничтоженные клетки
+	int CountLiveShip; //количество живых кораблей
+
 public:
 	Navy();
-	void AllocShip(int, int, std::string); //разместить корабль
+	void PlaceShip(int, int, string); //разместить корабль
 	void Show()const;//показ полей 
 
 	int GetInt(); //ввод целого числа
 	bool IsLive(){
-		return (nLiveShip > 0);
+		return (CountLiveShip > 0);
 	}
-	Rect Shell(Rect)const;// возврат оболочки для заданного прямоугольника (сам прямоугольник плюс пограничные клетки
-	void AddToVetoSet(Rect);// добавление клетки прямоугольника
+	Area Shell(Area)const;// возврат оболочки для заданного прямоугольника (сам прямоугольник плюс пограничные клетки
+	void CellAddition(Area);// добавление клетки прямоугольника
 
-protected:
-	Ship ship[10]; //корабли
-	Field ownField; //игровое поле пользователя
-	Field enemyField; //игровое поле противника
-	ShipMap shipMap; //клетка - индекс корабля
-	CellSet vetoSet; //запрещенные клетки
-	CellSet crushSet; //уничтоженные клетки
-	int nLiveShip; //количество живых кораблей
 };
 
-class UserNavy : public Navy{
+class User : public Navy{
 public:
-	UserNavy(){Allocation();}
-	void Allocation();
-	void FireOff(); //выстрел по врагу
+	User(){Location();}
+	void Location();
+	void Fire(); //выстрел по врагу
 	void ResultAnalys(); //результаты выстрела
 	void GetFire(); //куда попал враг
-	void FillDeadZone(Rect r, Field&); 
+	void FillDeadZone(Area r, Field&);
 };
 
-class RobotNavy : public Navy
+class Robot : public Navy
 {
 public:
-	RobotNavy(); 
-	void Allocation();
-	void FireOff(); //выстрел по врагу
+	Robot();
+	void Location();
+	void Fire(); //выстрел по врагу
 	void ResultAnalys(); //результаты выстрела
 	void GetFire(); //куда попал противник
 private:

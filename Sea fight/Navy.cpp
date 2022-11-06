@@ -1,64 +1,64 @@
 #include<iostream>
-#include<cstdlib>//
 #include<time.h>
 #include<algorithm>
+
+#include<Windows.h>
 #include "Navy.h"
 
 using namespace std;
 
-Cell Space::u_fire;
-Cell Space::r_fire;
+ElementCell Space::u_fire;
+ElementCell Space::r_fire;
 CurrentState Space::u_state = Miss;
 CurrentState Space::r_state = Miss;
-int Space::step = 1;
 
 string gap(int n)// возвращает строку из n пробелов 
 {
 	return string(n, ' ');
 }
 
-Navy::Navy() : nLiveShip(10)//заполняем игровое поле точками
+Navy::Navy() : CountLiveShip(10)//заполняем игровое поле точками
 {
 	for (int i = 0; i < N; i++)
 		for (int j = 0; j < N; j++){
-			ownField[i][j] = '.';
-			enemyField[i][j] = '.';
+			UserField[i][j] = '.';
+			RobotField[i][j] = '.';
 		}
 }
-Rect Navy::Shell(Rect r)const{
-	Rect sh(r);
-	sh.It.row = (--sh.It.row < 0) ? 0 : sh.It.row;
-	sh.It.col = (--sh.It.col < 0) ? 0 : sh.It.col;
-	sh.rb.row = (++sh.rb.row > (N - 1)) ? (N - 1) : sh.rb.row;
-	sh.rb.col = (++sh.rb.col > (N - 1)) ? (N - 1) : sh.rb.col;
+Area Navy::Shell(Area r)const{
+	Area sh(r);
+	sh.LeftTop.row = (--sh.LeftTop.row < 0) ? 0 : sh.LeftTop.row;
+	sh.LeftTop.col = (--sh.LeftTop.col < 0) ? 0 : sh.LeftTop.col;
+	sh.RightBottom.row = (++sh.RightBottom.row > (N - 1)) ? (N - 1) : sh.RightBottom.row;
+	sh.RightBottom.col = (++sh.RightBottom.col > (N - 1)) ? (N - 1) : sh.RightBottom.col;
 	return sh;
 }
 
-void Navy::AddToVetoSet(Rect r){
-	for (int i = r.It.row; i <= r.rb.row; i++)
-		for (int j = r.It.col; j <= r.rb.col; j++)
-			vetoSet.insert(Cell(i, j));
+void Navy::CellAddition(Area r){
+	for (int i = r.LeftTop.row; i <= r.RightBottom.row; i++)
+		for (int j = r.LeftTop.col; j <= r.RightBottom.col; j++)
+			ForbiddenCells.insert(ElementCell(i, j));
 }
 
-void Navy::AllocShip(int indShip, int nDeck, string name)//генерация случайно размещенной начальной клетки корабля с учетом нопустимовсти пересечения нового корабля с множеством клеток vetoSet 
+void Navy::PlaceShip(int indShip, int nDeck, string name)//генерация случайно размещенной начальной клетки корабля с учетом нопустимовсти пересечения нового корабля с множеством клеток DestroyColls 
 {
 	int i, j;
-	Cell It, rb;
+	ElementCell lt, rb;
 	while (1)
 	{
-		It.row = rand() % (N + 1 - nDeck);
-		It.col = rb.col = rand() % N;
-		rb.row = It.row + nDeck - 1;
-		if (!Rect(It, rb).Intersect(vetoSet))break;
+		lt.row = rand() % (N + 1 - nDeck);
+		lt.col = rb.col = rand() % N;
+		rb.row = lt.row + nDeck - 1;
+		if (!Area(lt, rb).Cross(ForbiddenCells))break;
 	}
-	ship[indShip] = Ship(nDeck, name, Rect(It, rb));//сохраняем данные о новом корабле
+	ship[indShip] = Ship(nDeck, name, Area(lt, rb));//сохраняем данные о новом корабле
 
-	for (i = It.row; i <= rb.row; i++)//наносим новый корабль на игровое поле (символ DECK). Добавляем соответствующие элементы в словарь ассоциаций
-		for (j = It.col; j <= rb.col; j++){
-			ownField[i][j] = DECK;
-			shipMap[Cell(i, j)] = indShip;
+	for (i = lt.row; i <= rb.row; i++)//наносим новый корабль на игровое поле (символ DECK). Добавляем соответствующие элементы в словарь ассоциаций
+		for (j = lt.col; j <= rb.col; j++){
+			UserField[i][j] = DECK;
+			shipMap[ElementCell(i, j)] = indShip;
 		}
-	AddToVetoSet(Shell(Rect(It, rb)));//добавляем в множество vetoSet клетки нового корабля, вместе с пограничными клетками 
+	CellAddition(Shell(Area(lt, rb)));//добавляем в множество vetoSet клетки нового корабля, вместе с пограничными клетками 
 }
 
 void Navy::Show()const{
@@ -66,31 +66,29 @@ void Navy::Show()const{
 	string colName("1 2 3 4 5 6 7 8 9 10");
 	int i, j;
 	cout << "____________________________________________________\n";
-	cout << gap(7) << "Мой флот" << gap(16) << "Флот неприятеля" << endl;
+	cout << gap(7) << "Мой флот" << gap(16) << "Флот противника" << endl;
 	cout << gap(3) << colName << gap(6) << colName << endl;
 
 	for (i = 0; i < 10; i++){
 		//Own
 		string line = gap(1) + rowName[i];
 		for (j = 0; j < N; j++)
-			line += gap(1) + (char)ownField[i][j];
+			line += gap(1) + (char)UserField[i][j];
 			//Enemy
 		line += gap(5) + rowName[i];
 		for (j = 0; j < N; j++)
-			line += gap(1) + (char)enemyField[i][j];
+			line += gap(1) + (char)RobotField[i][j];
 		cout << line << endl;
 	}
-	cout << endl;
-	cout << "===================================================\n";
-	cout << step << ". " << "Мой выстрел:     ";
-	step++;
+	cout << "____________________________________________________\n";
+	cout << "Мой выстрел:     ";
 }
 
 int Navy::GetInt(){
 	int value;
 	while (true){
 		cin >> value;
-		if ('\n' == cin.peek()){cin.get();break;}
+		if ('\n' == cin.peek()){cin.get();break;}//Функция peek() возвращает следующий символ в потоке 
 		else{
 			cout << "Повторите ввод колонки (ожидается целое число):" << endl;
 			cin.clear();
@@ -100,36 +98,36 @@ int Navy::GetInt(){
 	return value;
 }
 
-void UserNavy::Allocation(){
+void User::Location(){
 	srand((unsigned)time(NULL));
-	AllocShip(0, 4, "Авианосец 'Варяг'");
-	AllocShip(1, 3, "Линкор 'Муромец'");
-	AllocShip(2, 3, "Линкор 'Никитич'");
-	AllocShip(3, 2, "Крейсер 'Чудный'");
-	AllocShip(4, 2, "Крейсер 'Добрый'");
-	AllocShip(5, 2, "Крейсер 'Справедливый'");
-	AllocShip(6, 1, "Миноносец 'Храбрый'");
-	AllocShip(7, 1, "Миноносец 'Ушлый'");
-	AllocShip(8, 1, "Миноносец 'Проворный'");
-	AllocShip(9, 1, "Миноносец 'Смелый'");
-	vetoSet.clear();
+	PlaceShip(0, 4, " четырехпалубный кораблик ");
+	PlaceShip(1, 3, " трехпалубный кораблик ");
+	PlaceShip(2, 3, " трехпалубный кораблик ");
+	PlaceShip(3, 2, " двухпалубный кораблик ");
+	PlaceShip(4, 2, " двухпалубный кораблик ");
+	PlaceShip(5, 2, " двухпалубный кораблик ");
+	PlaceShip(6, 1, " однопалубный кораблик ");
+	PlaceShip(7, 1, " однопалубный кораблик ");
+	PlaceShip(8, 1, " однопалубный кораблик");
+	PlaceShip(9, 1, " однопалубный кораблик");
+	ForbiddenCells.clear();
 }
 
-void UserNavy::FillDeadZone(Rect r, Field& field)
+void User::FillDeadZone(Area r, Field& field)
 {
 	int i, j;
-	Rect sh = Shell(r);
-	for (i = sh.It.row, j = sh.It.col; j <= sh.rb.col; j++)
-		if (sh.It.row < r.It.row)field[i][j] = ' ';
-	for (i = sh.rb.row, j = sh.It.col; j <= sh.rb.col; j++)
-		if (sh.rb.row > r.rb.row)field[i][j] = ' ';
-	for (j = sh.It.col, i = sh.It.row; i <= sh.rb.row; i++)
-		if (sh.It.col < r.It.col)field[i][j] = ' ';
-	for (j = sh.rb.col, i = sh.It.row; i <= sh.rb.row; i++)
-		if (sh.rb.col > r.rb.col)field[i][j] = ' ';
+	Area sh = Shell(r);
+	for (i = sh.LeftTop.row, j = sh.LeftTop.col; j <= sh.RightBottom.col; j++)
+		if (sh.LeftTop.row < r.LeftTop.row)field[i][j] = ' ';
+	for (i = sh.RightBottom.row, j = sh.LeftTop.col; j <= sh.RightBottom.col; j++)
+		if (sh.RightBottom.row > r.RightBottom.row)field[i][j] = ' ';
+	for (j = sh.LeftTop.col, i = sh.LeftTop.row; i <= sh.RightBottom.row; i++)
+		if (sh.LeftTop.col < r.LeftTop.col)field[i][j] = ' ';
+	for (j = sh.RightBottom.col, i = sh.LeftTop.row; i <= sh.RightBottom.row; i++)
+		if (sh.RightBottom.col > r.RightBottom.col)field[i][j] = ' ';
 }
 
-void UserNavy::FireOff()
+void User::Fire()
 {
 	string capital_letter = "ABCDEFGHIJ";
 	string small_letter = "abcdefghij";
@@ -145,114 +143,114 @@ void UserNavy::FireOff()
 		row = capital_letter.find(rowName);
 		if (-1 == row)row = small_letter.find(rowName);
 		if (-1 == row) {
-			cout << "Ошибка. Повторите ввод. \n"; continue;
+			cout << "!Ошибка. Повторите ввод.! \n"; continue;
 		}
-		colName = GetInt();
+		colName = GetInt();//функция, которое возвращает следующее значение из введеного
 		col = colName - 1;
 		if ((col < 0) || (col > 9)) {
-			cout << "Ошибка. Повторите ввод. \n"; continue;
+			cout << "!Ошибка. Повторите ввод.! \n"; continue;
 		}
 		success = true;
 	}
-	u_fire = Cell(row, col);
+	u_fire = ElementCell(row, col);
 }
 
-void UserNavy::ResultAnalys() {
+void User::ResultAnalys() {
 	switch(r_state) {
 	case Miss:
-		enemyField[u_fire.row][u_fire.col] = MISS;
+		RobotField[u_fire.row][u_fire.col] = MISS;
 		break;
 	case Damage:
-		enemyField[u_fire.row][u_fire.col] = DAMAGE;
-		crushSet.insert(u_fire);
+		RobotField[u_fire.row][u_fire.col] = DAMAGE;
+		DestroyedCells.insert(u_fire);
 		break;
 	case Kill:
-		enemyField[u_fire.row][u_fire.col] = DAMAGE;
-		crushSet.insert(u_fire);
-		Rect kill;
-		kill.It = *crushSet.begin();
-		kill.rb = *(--crushSet.end());
-		FillDeadZone(kill, enemyField);
-		crushSet.clear();
+		RobotField[u_fire.row][u_fire.col] = DAMAGE;
+		DestroyedCells.insert(u_fire);
+		Area kill;
+		kill.LeftTop = *DestroyedCells.begin();
+		kill.RightBottom = *(--DestroyedCells.end());
+		FillDeadZone(kill, RobotField);
+		DestroyedCells.clear();
 	}
 }
 
-void UserNavy::GetFire() {
+void User::GetFire() {
 	//выстрел робота по клетке r_fire
 	string capital_letter = "ABCDEFGHIJ";
 	char rowName = capital_letter[r_fire.row];
 	int colName = r_fire.col + 1;
-	cout << "\nВыстрел неприятеля: " << rowName << colName << endl;
-	if (DECK == ownField[r_fire.row][r_fire.col]) {
+	cout << "\nВыстрел противника: " << rowName << colName << endl;
+	if (DECK == UserField[r_fire.row][r_fire.col]) {
 		cout << "*** Есть попадение! ***";
-		ownField[r_fire.row][r_fire.col] = DAMAGE;
+		UserField[r_fire.row][r_fire.col] = DAMAGE;
 		u_state = Damage;
 		//индекс корабля занимающкго клетку r_fire
 		int ind = shipMap[r_fire];
-		ship[ind].nLiveDeck--;
+		ship[ind].CountLiveDeck--;
 
-		if (!ship[ind].nLiveDeck) {
+		if (!ship[ind].CountLiveDeck) {
 			u_state = Kill;
 			cout << gap(6) << "О ужас! Погиб" << ship[ind].name << " !!!";
-			nLiveShip--;
-			Rect kill = ship[ind].place;
-			FillDeadZone(kill, ownField);
+			CountLiveShip--;
+			Area kill = ship[ind].place;
+			FillDeadZone(kill, UserField);
 		}
 	}
 	else {
 		u_state = Miss;
 		cout << "*** Мимо! ***";
-		ownField[r_fire.row][r_fire.col] = MISS;
+		UserField[r_fire.row][r_fire.col] = MISS;
 	}
 	cout << endl;
 }
 
-RobotNavy::RobotNavy() {
-	Allocation();
+Robot::Robot() {
+	Location();
 	isCrushContinue = false;
 	upEmpty = false;
 }
 
-void RobotNavy::Allocation() {
-	AllocShip(0, 4, "Авианосец 'Алькаида'");
-	AllocShip(1, 3, "Линкор 'БанЛаден'");
-	AllocShip(2, 3, "Линкор 'Хусейн'");
-	AllocShip(3, 2, "Крейсер 'Подлый'");
-	AllocShip(4, 2, "Крейсер 'Коварный'");
-	AllocShip(5, 2, "Крейсер 'Злой'");
-	AllocShip(6, 1, "Миноносец 'Гадкий'");
-	AllocShip(7, 1, "Миноносец 'Мерзкий'");
-	AllocShip(8, 1, "Миноносец 'Пакостный'");
-	AllocShip(9, 1, "Миноносец 'Душный'");
-	vetoSet.clear();
+void Robot::Location() {
+	PlaceShip(0, 4, " четырехпалубный кораблик ");
+	PlaceShip(1, 3, " трехпалубный кораблик ");
+	PlaceShip(2, 3, " трехпалубный кораблик ");
+	PlaceShip(3, 2, " двухпалубный кораблик ");
+	PlaceShip(4, 2, " двухпалубный кораблик ");
+	PlaceShip(5, 2, " двухпалубный кораблик ");
+	PlaceShip(6, 1, " однопалубный кораблик ");
+	PlaceShip(7, 1, " однопалубный кораблик ");
+	PlaceShip(8, 1, " однопалубный кораблик");
+	PlaceShip(9, 1, " однопалубный кораблик");
+	ForbiddenCells.clear();
 }
  
-void RobotNavy::FireOff() {
-	Cell c, cUp;
+void Robot::Fire() {
+	ElementCell c, cUp;
 	if (!isCrushContinue) {
 		//случайный выбор координат выстрела
 		while(1) {
 			c.row = rand() % N;
 			c.col = rand() % N;
-			if (!c.InSet(vetoSet))break;
+			if (!c.InSet(ForbiddenCells))break;
 		}
 	}
 	else {
 		//пляшем от предыдущего попадания 
 		c = cUp = r_fire;
 		cUp.row--;
-		if ((!upEmpty) && c.row && (!cUp.InSet(vetoSet)))
+		if ((!upEmpty) && c.row && (!cUp.InSet(ForbiddenCells)))
 			c.row--;
 		else {
-			c = *(--crushSet.end());
+			c = *(--DestroyedCells.end());
 			c.row++;
 		}
 	}
 	r_fire = c;
-	vetoSet.insert(r_fire);
+	ForbiddenCells.insert(r_fire);
 }
 
-void RobotNavy::ResultAnalys() {
+void Robot::ResultAnalys() {
 	//u_state - сщщбщение пользователя о результате
 	//выстрел робота по клетке r_fire
 	switch(u_state){
@@ -261,34 +259,34 @@ void RobotNavy::ResultAnalys() {
 		break;
 	case Damage:
 		isCrushContinue = true;
-		crushSet.insert(r_fire);
+		DestroyedCells.insert(r_fire);
 		break;
 	case Kill:
 		isCrushContinue = false;
 		upEmpty = false;
-		crushSet.insert(r_fire);
-		Rect kill;
-		kill.It = *crushSet.begin();
-		kill.rb = *(--crushSet.end());
+		DestroyedCells.insert(r_fire);
+		Area kill;
+		kill.LeftTop = *DestroyedCells.begin();
+		kill.RightBottom = *(--DestroyedCells.end());
 
-		AddToVetoSet(Shell(kill));
-		crushSet.clear();
+		CellAddition(Shell(kill));
+		DestroyedCells.clear();
     }
 }
 
-void RobotNavy::GetFire() {
+void Robot::GetFire() {
 	//выстрел пользователя по клетке u_fire
-	if (DECK == ownField[u_fire.row][u_fire.col]) {
+	if (DECK == UserField[u_fire.row][u_fire.col]) {
 		cout << "*** Есть попадание! ***";
 		r_state = Damage;
 		//индекс корабля, занимающего клетку u_fire
 		int ind = shipMap[u_fire];
-		ship[ind].nLiveDeck--;
+		ship[ind].CountLiveDeck--;
 
-		if (!ship[ind].nLiveDeck) {
+		if (!ship[ind].CountLiveDeck) {
 			r_state = Kill;
 			cout << gap(6) << "Уничтожен " << ship[ind].name << " !!!";
-			nLiveShip--;
+			CountLiveShip--;
 		}
 	}
 	else {

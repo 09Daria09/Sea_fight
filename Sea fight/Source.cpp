@@ -1,14 +1,13 @@
 #include<iostream>
 #include"Navy.h"
-using namespace std;
 
 int main()
 {
 	system("color F0");
 	setlocale(LC_ALL, "ru");
     //начальная позиция 
-	UserNavy userNavy; //Флот пользователя
-	RobotNavy robotNavy;//Флот робота
+	User userNavy; //Флот пользователя
+	Robot robotNavy;//Флот робота
 	userNavy.Show();
 	//printf("\a");
 
@@ -19,7 +18,7 @@ int main()
 			cin.get();
 		}
 		else {
-			userNavy.FireOff();
+			userNavy.Fire();
 			robotNavy.GetFire();
 			userNavy.ResultAnalys();
 			if (!robotNavy.IsLive()) {
@@ -29,18 +28,18 @@ int main()
 		}
 		//выстрел робота
 		if (Space::r_state != Miss)
-			cout << "выстрел неприятеля пропускается..." << endl;
+			cout << "выстрел противника пропускается..." << endl;
 		else {
-			robotNavy.FireOff();
+			robotNavy.Fire();
 			userNavy.GetFire();
 			robotNavy.ResultAnalys();
 		}
 		userNavy.Show();
 	}
 	if (userNavy.IsLive())
-		cout << "\n:-))) Ура победа!!! :-)))" << endl;
+		cout << "\n Ура победа!!! :)" << endl;
 	else {
-		cout << "\n Поражение " << endl;
+		cout << "\n Поражение :( \nНичего в следующий раз повезет :) " << endl;
 	}
 	cin.get();
 	return 0;

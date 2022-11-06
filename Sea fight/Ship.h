@@ -1,52 +1,52 @@
 #pragma once
-//&
-#ifndef SHIP_H
-#endif SHIP_H
-
-#include <set>
-#include<map>
+#include <set> //Set - контейнер, который автоматически сортирует добавляемые элементы в порядке возрастания.
+#include<map> //map - контейнер, который также будет содержать элементы в отсортированном порядке при добавлении, но он хранит повторяющееся элементы
 #include<string>
+using namespace std;
 
 constexpr auto N = 10;
+ /*constexpr — спецификатор типа, 
+введённый в стандарт программирования языка C++11 для обозначения константных выражений, 
+которые могут быть вычислены во время компиляции кода*/
 
 
-struct Cell;
-typedef std::set<Cell>CellSet;
+struct ElementCell; //конкретный элемент ячейки 
+typedef set<ElementCell>CellSet; //создаем контейнер для хранения элементов
 
-struct Cell
+struct ElementCell
 {
-	Cell(int _r = 0, int _c = 0): row(_r), col(_c){}
+	int col; //колонка
+	int row;//ряд
+	ElementCell(int row_ = 0, int col_ = 0): row(row_), col(col_){} // присваиваем ряду и колонке нули
 	bool InSet(const CellSet&)const;//определяет принадлежность клетки множеству типа CellSet
 
-	bool operator<(const Cell&)const;
-	int row;//ряд
-	int col; //колонка
+	bool operator<(const ElementCell&)const; //
 };
 //Прямоугольная область (размещение кораблей)
-struct Rect
+struct Area
 {
-	Rect(){}
-	Rect(Cell _It, Cell _rb) : It(_It), rb(_rb)	{FillCset();}
-	void FillCset();
+	ElementCell LeftTop; //левая верхняя клетка
+	ElementCell RightBottom;//правая нижняя клетка
+	CellSet cset; // клетки принадлежащие прямоугольнику 
+	Area(){}
+	Area(ElementCell It, ElementCell rb) : LeftTop(It), RightBottom(rb)	{FillCset();}
+	void FillCset();// наполнить cset клетками 
 
-	bool Intersect(const CellSet& cs)const;
+	bool Cross(const CellSet& cs)const;// определение непустого пересечения прямоугольника с множеством cs 
 
-	Cell It;
-	Cell rb;
-	CellSet cset;
 
 };
 class Ship
 {
-	friend class UserNavy;
-	friend class RobotNavy;
-public:
-	Ship(): nDeck(0), nLiveDeck(0){}
-	Ship(int, std::string, Rect);
+	friend class User;
+	friend class Robot;
 protected:
-	Rect place; //координаты размещения
+	Area place; //координаты размещения
 	std::string name; //имя корабля
-	int nDeck; //количество палуб
-	int nLiveDeck; //количество неповрежденных палуб 
+	int CountDeck; //количество палуб
+	int CountLiveDeck; //количество неповрежденных палуб 
+public:
+	Ship(): CountDeck(0), CountLiveDeck(0){}
+	Ship(int, string, Area);
 };
 
